@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ManejoPresupuesto.Validaciones;
+using System.ComponentModel.DataAnnotations;
 
 namespace ManejoPresupuesto.Models
 {
@@ -6,6 +7,7 @@ namespace ManejoPresupuesto.Models
     {
         public int Id { get; set; }
         [Required(ErrorMessage = "El campo {0} es requerido")]
+        [PrimeraLetraMayuscula]
         public string Nombre { get; set; }
         public int UsuarioId { get; set; }
         public int Orden { get; set; }
