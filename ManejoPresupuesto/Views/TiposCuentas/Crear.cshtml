@@ -10,11 +10,12 @@
     Ejemplos: Prestamos, tarjetas de credito, etc.
 </h5>
 
-<div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-controller="TiposCuentas" asp-action="Crear">
+<form asp-action="Crear">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
     <div class="mb-3">
-        <label asp-for="Nombre" class="form-label">Nombre</label>
+        <label asp-for="Nombre" class="form-label"></label>
         <input type="text" asp-for="Nombre" class="form-control" />
         <span asp-validation-for="Nombre" class="text-danger"></span>
     </div>

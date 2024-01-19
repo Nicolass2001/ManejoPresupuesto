@@ -1,18 +1,19 @@
 ﻿using ManejoPresupuesto.Validaciones;
-using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
 namespace ManejoPresupuesto.Models
 {
-    public class TipoCuenta
+    public class Cuenta
     {
         public int Id { get; set; }
         [Required(ErrorMessage = "El campo {0} es requerido")]
-        [PrimeraLetraMayuscula]
         [StringLength(50)]
-        [Remote(action: "VerificarExisteTipoCuenta", controller:"TiposCuentas")]
+        [PrimeraLetraMayuscula]
         public string Nombre { get; set; }
-        public int UsuarioId { get; set; }
-        public int Orden { get; set; }
+        [Display(Name = "Tipo Cuenta")]
+        public int TipoCuentaId { get; set; }
+        public decimal Balance { get; set; }
+        [StringLength(1000)]
+        public string Descripcion { get; set; }
     }
 }
