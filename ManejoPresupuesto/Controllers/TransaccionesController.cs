@@ -15,23 +15,30 @@ namespace ManejoPresupuesto.Controllers
         private readonly IRepositorioCuentas repositorioCuentas;
         private readonly IRepositorioCategorias repositorioCategorias;
         private readonly IMapper mapper;
+        private readonly IServicioReportes servicioReportes;
 
         public TransaccionesController(IRepositorioTransacciones repositorioTransacciones, 
             IServicioUsuarios servicioUsuarios, 
             IRepositorioCuentas repositorioCuentas, 
             IRepositorioCategorias repositorioCategorias,
-            IMapper mapper)
+            IMapper mapper,
+            IServicioReportes servicioReportes)
         {
             this.repositorioTransacciones = repositorioTransacciones;
             this.servicioUsuarios = servicioUsuarios;
             this.repositorioCuentas = repositorioCuentas;
             this.repositorioCategorias = repositorioCategorias;
             this.mapper = mapper;
+            this.servicioReportes = servicioReportes;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(int mes, int anio)
         {
-            return View();
+            var usuarioId = servicioUsuarios.ObtenerUsuarioId();
+
+            var modelo = await servicioReportes.ObtenerReporteTransaccionesDetalladas(usuarioId, mes, anio, ViewBag);
+
+            return View(modelo);
         }
 
         public async Task<IActionResult> Crear()
@@ -80,7 +87,7 @@ namespace ManejoPresupuesto.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Editar(int id)
+        public async Task<IActionResult> Editar(int id, string urlRetorno = null)
         {
             var usuarioId = servicioUsuarios.ObtenerUsuarioId();
             var transaccion = await repositorioTransacciones.ObtenerPorId(id, usuarioId);
@@ -92,6 +99,7 @@ namespace ManejoPresupuesto.Controllers
 
             var modelo = mapper.Map<TransaccionActualizacionViewModel>(transaccion);
 
+            modelo.UrlRetorno = urlRetorno;
             modelo.MontoAnterior = modelo.Monto;
 
             if (modelo.TipoOperacionId == TipoOperacion.Gasto)
@@ -140,11 +148,19 @@ namespace ManejoPresupuesto.Controllers
             }
 
             await repositorioTransacciones.Actualizar(transaccion, modelo.MontoAnterior, modelo.CuentaAnteriorId);
-            return RedirectToAction("Index");
+
+            if (string.IsNullOrEmpty(modelo.UrlRetorno))
+            {
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return LocalRedirect(modelo.UrlRetorno);
+            }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Borrar(int id)
+        public async Task<IActionResult> Borrar(int id, string urlRetorno = null)
         {
             var usuarioId = servicioUsuarios.ObtenerUsuarioId();
             var transaccion = repositorioTransacciones.ObtenerPorId(id, usuarioId);
@@ -155,7 +171,15 @@ namespace ManejoPresupuesto.Controllers
             }
 
             await repositorioTransacciones.Borrar(id);
-            return RedirectToAction("Index");
+
+            if (string.IsNullOrEmpty(urlRetorno))
+            {
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return LocalRedirect(urlRetorno);
+            }
         }
 
         private async Task<IEnumerable<SelectListItem>> ObtenerCuentas(int usuarioId)
