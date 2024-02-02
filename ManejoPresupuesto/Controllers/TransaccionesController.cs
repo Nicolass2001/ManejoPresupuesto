@@ -18,9 +18,9 @@ namespace ManejoPresupuesto.Controllers
         private readonly IMapper mapper;
         private readonly IServicioReportes servicioReportes;
 
-        public TransaccionesController(IRepositorioTransacciones repositorioTransacciones, 
-            IServicioUsuarios servicioUsuarios, 
-            IRepositorioCuentas repositorioCuentas, 
+        public TransaccionesController(IRepositorioTransacciones repositorioTransacciones,
+            IServicioUsuarios servicioUsuarios,
+            IRepositorioCuentas repositorioCuentas,
             IRepositorioCategorias repositorioCategorias,
             IMapper mapper,
             IServicioReportes servicioReportes)
@@ -99,9 +99,49 @@ namespace ManejoPresupuesto.Controllers
             return View(modelo);
         }
 
-        public IActionResult Mensual()
+        public async Task<IActionResult> Mensual(int anio)
         {
-            return View();
+            var usuarioId = servicioUsuarios.ObtenerUsuarioId();
+
+            if (anio == 0)
+            {
+                anio = DateTime.Today.Year;
+            }
+
+            var transaccionesPorMes = await repositorioTransacciones.ObtenerPorMes(usuarioId, anio);
+
+            var transaccionesAgrupadas = transaccionesPorMes.GroupBy(x => x.Mes).Select(x => new ResultadoObtenerPorMes()
+            {
+                Mes = x.Key,
+                Ingreso = x.Where(x => x.TipoOperacionId == TipoOperacion.Ingreso).Select(x => x.Monto).FirstOrDefault(),
+                Gasto = x.Where(x => x.TipoOperacionId == TipoOperacion.Gasto).Select(x => x.Monto).FirstOrDefault()
+            }).ToList();
+
+            for (int mes = 1; mes <= 12; mes++)
+            {
+                var transaccion = transaccionesPorMes.FirstOrDefault(x => x.Mes == mes);
+                var fechaReferencia = new DateTime(anio, mes, 1);
+                if (transaccion is null)
+                {
+                    transaccionesAgrupadas.Add(new ResultadoObtenerPorMes()
+                    {
+                        Mes = mes,
+                        FechaReferencia = fechaReferencia,
+                    });
+                }
+                else
+                {
+                    transaccion.FechaReferencia = fechaReferencia;
+                }
+            }
+
+            transaccionesAgrupadas = transaccionesAgrupadas.OrderByDescending(x => x.Mes).ToList();
+
+            var modelo = new ReporteMensualViewModel();
+            modelo.Anio = anio;
+            modelo.TransaccionesPorMes = transaccionesAgrupadas;
+
+            return View(modelo);
         }
 
         public IActionResult ExcelReporte()
@@ -150,7 +190,7 @@ namespace ManejoPresupuesto.Controllers
             }
 
             modelo.UsuarioId = usuarioId;
-            
+
             if (modelo.TipoOperacionId == TipoOperacion.Gasto)
             {
                 modelo.Monto *= -1;
@@ -177,7 +217,7 @@ namespace ManejoPresupuesto.Controllers
 
             if (modelo.TipoOperacionId == TipoOperacion.Gasto)
             {
-                modelo.MontoAnterior = modelo.Monto -1;
+                modelo.MontoAnterior = modelo.Monto - 1;
             }
 
             modelo.CuentaAnteriorId = transaccion.CuentaId;
@@ -191,7 +231,7 @@ namespace ManejoPresupuesto.Controllers
         public async Task<IActionResult> Editar(TransaccionActualizacionViewModel modelo)
         {
             var usuarioId = servicioUsuarios.ObtenerUsuarioId();
-            
+
             if (!ModelState.IsValid)
             {
                 modelo.Cuentas = await ObtenerCuentas(usuarioId);

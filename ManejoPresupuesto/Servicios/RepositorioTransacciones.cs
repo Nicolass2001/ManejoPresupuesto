@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using ManejoPresupuesto.Models;
 using Microsoft.Data.SqlClient;
+using System.Reflection;
 
 namespace ManejoPresupuesto.Servicios
 {
@@ -11,6 +12,7 @@ namespace ManejoPresupuesto.Servicios
         Task Crear(Transaccion transaccion);
         Task<IEnumerable<Transaccion>> ObtenerPorCuentaId(ParametroTransaccionesPorCuenta modelo);
         Task<Transaccion> ObtenerPorId(int id, int usuarioId);
+        Task<IEnumerable<ResultadoObtenerPorMes>> ObtenerPorMes(int usuarioId, int anio);
         Task<IEnumerable<ResultadoObtenerPorSemana>> ObtenerPorSemana(ParametroTransaccionesPorUsuario modelo);
         Task<IEnumerable<Transaccion>> ObtenerPorUsuarioId(ParametroTransaccionesPorUsuario modelo);
     }
@@ -114,10 +116,22 @@ namespace ManejoPresupuesto.Servicios
                 GROUP BY DATEDIFF(D, @fechaInicio, FechaTransaccion), cat.TipoOperacionId", modelo);
         }
 
+        public async Task<IEnumerable<ResultadoObtenerPorMes>> ObtenerPorMes(int usuarioId, int anio)
+        {
+            using var connection = new SqlConnection(connectionString);
+            return await connection.QueryAsync<ResultadoObtenerPorMes>(@"
+                select MONTH(t.FechaTransaccion) as Mes, SUM(t.Monto) as Monto, cat.TipoOperacionId
+                from Transacciones t
+                inner join Categorias cat
+                on cat.Id = t.CategoriaId
+                where t.UsuarioId = @usuarioId and year(t.FechaTransaccion) = @anio
+                group by MONTH(t.FechaTransaccion), cat.TipoOperacionId", new { usuarioId, anio });
+        }
+
         public async Task Borrar(int id)
         {
             using var connection = new SqlConnection(connectionString);
-            await connection.ExecuteAsync("Transacciones_Borrar", new { id }, 
+            await connection.ExecuteAsync("Transacciones_Borrar", new { id },
                 commandType: System.Data.CommandType.StoredProcedure);
         }
     }
