@@ -425,13 +425,22 @@ namespace ManejoPresupuesto.Controllers
         private async Task<IEnumerable<SelectListItem>> ObtenerCuentas(int usuarioId)
         {
             var cuentas = await repositorioCuentas.Buscar(usuarioId);
-            return cuentas.Select(x => new SelectListItem(x.Nombre, x.Id.ToString()));
+            var resultado = cuentas.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())).ToList();
+            return AgregarOpcionPorDefecto(resultado);
         }
 
         private async Task<IEnumerable<SelectListItem>> ObtenerCategorias(int usuarioId, TipoOperacion tipoOperacion)
         {
             var categorias = await repositorioCategorias.Obtener(usuarioId, tipoOperacion);
-            return categorias.Select(x => new SelectListItem(x.Nombre, x.Id.ToString()));
+            var resultado = categorias.Select(x => new SelectListItem(x.Nombre, x.Id.ToString())).ToList();
+            return AgregarOpcionPorDefecto(resultado);
+        }
+
+        private List<SelectListItem> AgregarOpcionPorDefecto(List<SelectListItem> selectListItems)
+        {
+            var opcionPorDefecto = new SelectListItem("-- Seleccione --", "0", true);
+            selectListItems.Insert(0, opcionPorDefecto);
+            return selectListItems;
         }
 
         [HttpPost]
